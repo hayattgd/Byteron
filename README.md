@@ -1,0 +1,3 @@
+# Byteron
+
+A fantasy retro computer where you can make your own tool, game, window manager...
