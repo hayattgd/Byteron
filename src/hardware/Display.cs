@@ -129,8 +129,13 @@ public class Display
 		int pixelsize = (int)MathF.Min(Raylib.GetRenderWidth() / width, Raylib.GetRenderHeight() / height);
 
 		#if DEBUG
-		TextRenderer.DrawText(0, height - 6, "Scale:" + pixelsize, 5);
-		TextRenderer.DrawText(0, height - 12, "FPS:" + Raylib.GetFPS() + "/" + fps, 5);
+		TextRenderer textRenderer = new(this);
+		textRenderer.DrawText(2, height - 6, "Scale:" + pixelsize, 10);
+		textRenderer.DrawText(2, height - 12, "FPS:" + Raylib.GetFPS() + "/" + fps, 5);
+		for (int i = 0; i < palette.Length; i++)
+		{
+			SetPixel(0, height - i, i);
+		}
 		#endif
 
 		for (int x = 0; x < width; x++)

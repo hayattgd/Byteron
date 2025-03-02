@@ -12,7 +12,7 @@ public static class Application
 	public static Display display = new();
 	public static Folder rootfolder = new(name + "-HDD", true);
 
-	public static Shell shell = new();
+	public static Shell shell = new(new(display));
 
 	public static void Init()
 	{
@@ -20,14 +20,17 @@ public static class Application
 		Raylib.SetWindowState(ConfigFlags.ResizableWindow | ConfigFlags.VSyncHint);
 
 		display.Init();
+		shell.Run();
 	}
 
 	public static void Update()
 	{
 		Raylib.BeginDrawing();
 		Raylib.ClearBackground(display.average);
-		shell.Run();
+
+		shell.Update();
 		display.Draw();
+
 		Raylib.EndDrawing();
 	}
 

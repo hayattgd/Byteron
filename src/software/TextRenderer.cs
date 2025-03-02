@@ -1,11 +1,20 @@
+using Byteron.hardware;
+
 namespace Byteron.software;
 
-public static class TextRenderer
+public class TextRenderer
 {
+	public TextRenderer(Display display)
+	{
+		target = display;
+	}
+
 	//43 text to fill entire screen (pos:0,0 size:6x6)
 	//43x24 text
 
-	public static bool DrawCharacter(int x, int y, int character, int color)
+	public Display target;
+
+	public bool DrawCharacter(int x, int y, int character, int color)
 	{
 		bool success = true;
 		if (character < 0) return true; //Returns true because this is space or \n
@@ -16,7 +25,7 @@ public static class TextRenderer
 			{
 				if (font[character][ry][rx] == '@')
 				{
-					if (!Application.display.SetPixel(x+rx, y+ry, color))
+					if (!target.SetPixel(x+rx, y+ry, color))
 					{
 						success = false;
 					}
@@ -27,35 +36,36 @@ public static class TextRenderer
 		return success;
 	}
 
-	public static bool DrawCharacter(int x, int y, char character, int color)
+	public bool DrawCharacter(int x, int y, char character, int color)
 	{
 		return DrawCharacter(x, y, CharToIdx(character), color);
 	}
 
-	public static void DrawText(int x, int y, string text, int color)
+	public void DrawText(int x, int y, string text, int color)
 	{
 		int currentx = x;
 		int currenty = y;
 		for (int i = 0; i < text.Length; i++)
 		{
-			currentx += 6;
 			if (text[i] == '\n')
 			{
 				currenty += 6;
 				currentx = x;
 			}
+
 			DrawCharacter(currentx, currenty, text[i], color);
+			currentx += 6;
 		}
 	}
 
-	public static void DrawTextWrap(int x, int y, string text, int color)
+	public void DrawTextWrap(int x, int y, string text, int color)
 	{
 		int currentx = x;
 		int currenty = y;
 		for (int i = 0; i < text.Length; i++)
 		{
 			currentx += 6;
-			if ((text[i] == '\n') || (!Application.display.CheckRect(currentx, currenty, 5, 5)))
+			if ((text[i] == '\n') || (!target.CheckRect(currentx, currenty, 5, 5)))
 			{
 				currenty += 6;
 				currentx = x;
@@ -65,7 +75,7 @@ public static class TextRenderer
 	}
 
 	//ik im going crazy with this one
-	public static int CharToIdx(char character)
+	private static int CharToIdx(char character)
 	{
 		return character switch
 		{
@@ -156,11 +166,16 @@ public static class TextRenderer
 			'.' => 83,
 			'_' => 84,
 			':' => 85,
+			'?' => 86,
+			'@' => 87,
+			'^' => 88,
+			'\\' => 89,
+			';' => 90,
 			_ => 0,
 		};
 	}
 
-	static readonly char[][][] font = [
+	private static readonly char[][][] font = [
 		[
 			['@', '@', '@', '@', '@'],
 			['@', ' ', ' ', ' ', '@'],
@@ -762,6 +777,41 @@ public static class TextRenderer
 			[' ', ' ', ' ', ' ', ' '],
 			[' ', ' ', '@', ' ', ' '],
 			[' ', ' ', ' ', ' ', ' '],
+		],
+		[
+			[' ', '@', '@', '@', ' '],
+			[' ', ' ', ' ', '@', ' '],
+			[' ', ' ', '@', ' ', ' '],
+			[' ', ' ', ' ', ' ', ' '],
+			[' ', ' ', '@', ' ', ' '],
+		],
+		[
+			[' ', '@', '@', '@', ' '],
+			['@', ' ', ' ', ' ', '@'],
+			['@', ' ', '@', '@', '@'],
+			['@', ' ', ' ', ' ', ' '],
+			[' ', '@', '@', '@', ' '],
+		],
+		[
+			[' ', ' ', '@', ' ', ' '],
+			[' ', '@', ' ', '@', ' '],
+			[' ', ' ', ' ', ' ', ' '],
+			[' ', ' ', ' ', ' ', ' '],
+			[' ', ' ', ' ', ' ', ' '],
+		],
+		[
+			[' ', '@', ' ', ' ', ' '],
+			[' ', '@', ' ', ' ', ' '],
+			[' ', ' ', '@', ' ', ' '],
+			[' ', ' ', ' ', '@', ' '],
+			[' ', ' ', ' ', '@', ' '],
+		],
+		[
+			[' ', ' ', ' ', ' ', ' '],
+			[' ', ' ', '@', ' ', ' '],
+			[' ', ' ', ' ', ' ', ' '],
+			[' ', ' ', '@', ' ', ' '],
+			[' ', ' ', '@', ' ', ' '],
 		],
 	];
 }
