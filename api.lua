@@ -1,9 +1,8 @@
 Shell = {
 	---Prints out text to shell console
-	---Color must be 0..15
 	---@param text string
-	---@param color integer
-	print = function (text, color) end,
+	---@param color? integer Color must be 0..15
+	print = function (text, color) color = color or 0 end,
 
 	---Runs command.
 	---@param command string
@@ -18,26 +17,58 @@ Shell = {
 
 Input = {
 	---Get if key is pressed down.
-	---@param keycode integer
-	---@return integer
-	key = function (keycode) return 0 end,
+	---@param keycode keycode
+	---@return boolean
+	key = function (keycode) return false end,
 
 	---Get if key just pressed right now.
-	---@param keycode integer
-	---@return integer
-	keydown = function (keycode) return 0 end,
+	---@param keycode keycode
+	---@return boolean
+	keydown = function (keycode) return false end,
 
 	---Get if key just released right now.
-	---@param keycode integer
-	---@return integer
-	keyup = function (keycode) return 0 end,
+	---@param keycode keycode
+	---@return boolean
+	keyup = function (keycode) return false end,
 
 	---Gets a signal of key type (including repeats).
-	---@param keycode integer
-	---@return integer
-	keyrepeat = function (keycode) return 0 end,
+	---@param keycode keycode
+	---@return boolean
+	keyrepeat = function (keycode) return false end,
 
-	---keycode
+	---Get mouse button is down or not.
+	---@param button mouse
+	---@return boolean
+	mousebtn = function (button) return false end,
+
+	---Get if mouse button just pressed or not.
+	---@param button mouse
+	---@return boolean
+	mousedown = function (button) return false end,
+
+	---Get if mouse button just released or not.
+	---@param button mouse
+	---@return boolean
+	mouseup = function (button) return false end,
+
+	---Represents x axis of mouse delta.
+	---@return integer
+	xdelta = function () return 0 end,
+
+	---Represents y axis of mouse delta.
+	---@return integer
+	ydelta = function () return 0 end,
+
+	---@enum mouse
+	mouse = {
+		Left = 0,
+		Right = 0,
+		Middle = 0,
+		Forward = 0,
+		Back = 0,
+	},
+
+	---@enum keycode
 	code = {
 		A = 0,
 		B = 0,
@@ -100,15 +131,13 @@ Render = {
 	init = function () end,
 
 	---Fills entire screen with [color].
-	---Color must be 0..15
-	---@param color integer
+	---@param color integer Color must be 0..15
 	clear = function (color) end,
 
 	---Sets specified pixel with color.
-	---Color must be 0..15
 	---@param x integer
 	---@param y integer
-	---@param color integer
+	---@param color integer Color must be 0..15
 	setpixel = function (x, y, color) end,
 
 	---Gets color of specified position.
@@ -142,10 +171,9 @@ Render = {
 
 Text = {
 	---Draws text on specified position and color.
-	---Color must be 0..15
 	---@param x integer
 	---@param y integer
 	---@param text string
-	---@param color integer
+	---@param color? integer Color must be 0..15
 	draw = function (x, y, text, color) end,
 }

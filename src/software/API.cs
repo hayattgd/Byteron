@@ -1,7 +1,5 @@
-using System.Reflection.Metadata.Ecma335;
 using Byteron.hardware;
 using MoonSharp.Interpreter;
-using MoonSharp.Interpreter.Interop;
 using Raylib_cs;
 
 namespace Byteron.software;
@@ -132,6 +130,40 @@ public class API(Shell shell)
 		return Raylib.IsKeyPressedRepeat((KeyboardKey)key);
 	}
 
+	public float GetMouseDeltaX()
+	{
+		return Raylib.GetMouseDelta().X / display.pixelsize;
+	}
+
+	public float GetMouseDeltaY()
+	{
+		return Raylib.GetMouseDelta().Y / display.pixelsize;
+	}
+
+	public bool MouseDown(int? button)
+	{
+		int mousebutton = (int)MouseButton.Left;
+		if (button != null) mousebutton = (int)button;
+
+		return Raylib.IsMouseButtonDown((MouseButton)mousebutton);
+	}
+
+	public bool MousePressed(int? button)
+	{
+		int mousebutton = (int)MouseButton.Left;
+		if (button != null) mousebutton = (int)button;
+
+		return Raylib.IsMouseButtonPressed((MouseButton)mousebutton);
+	}
+
+	public bool MouseReleased(int? button)
+	{
+		int mousebutton = (int)MouseButton.Left;
+		if (button != null) mousebutton = (int)button;
+
+		return Raylib.IsMouseButtonReleased((MouseButton)mousebutton);
+	}
+
 	public void DrawText(int? x, int? y, string? text, int? color)
 	{
 		if (x == null) throw new LuaException("text.draw", MissingArgument);
@@ -143,7 +175,7 @@ public class API(Shell shell)
 
 		render.DrawText((int)x, (int)y, text, col);
 	}
-	
+
 	public void RegisterAPIs(Script lua)
 	{
 		lua.Globals["Shell"] = new Table(lua);
@@ -157,6 +189,18 @@ public class API(Shell shell)
 		((Table)lua.Globals["Input"])["keydown"] = (Func<int?, bool>)IsKeyPressedNow;
 		((Table)lua.Globals["Input"])["keyup"] = (Func<int?, bool>)IsKeyUpNow;
 		((Table)lua.Globals["Input"])["keyrepeat"] = (Func<int?, bool>)KeyRepeated;
+		((Table)lua.Globals["Input"])["mousebtn"] = (Func<int?, bool>)MouseDown;
+		((Table)lua.Globals["Input"])["mousedown"] = (Func<int?, bool>)MousePressed;
+		((Table)lua.Globals["Input"])["mouseup"] = (Func<int?, bool>)MouseReleased;
+		((Table)lua.Globals["Input"])["xdelta"] = (Func<float>)GetMouseDeltaX;
+		((Table)lua.Globals["Input"])["ydelta"] = (Func<float>)GetMouseDeltaY;
+		
+		((Table)lua.Globals["Input"])["mouse"] = new Table(lua);
+		((Table)((Table)lua.Globals["Input"])["mouse"])["Left"] = MouseButton.Left;
+		((Table)((Table)lua.Globals["Input"])["mouse"])["Right"] = MouseButton.Right;
+		((Table)((Table)lua.Globals["Input"])["mouse"])["Middle"] = MouseButton.Middle;
+		((Table)((Table)lua.Globals["Input"])["mouse"])["Forward"] = MouseButton.Forward;
+		((Table)((Table)lua.Globals["Input"])["mouse"])["Bacl"] = MouseButton.Back;
 
 		//Keycodes comes here
 		((Table)lua.Globals["Input"])["code"] = new Table(lua);

@@ -448,7 +448,7 @@ public class Shell(TextRenderer render)
 				Printf("^C");
 				Prompt();
 			}
-			if (Raylib.IsKeyPressed(KeyboardKey.R))
+			else if (Raylib.IsKeyPressed(KeyboardKey.R))
 			{
 				running = null;
 				update = true;
@@ -456,6 +456,10 @@ public class Shell(TextRenderer render)
 				Printf("^R");
 				RunCommand(previousCommand);
 				Prompt();
+			}
+			else if (Raylib.IsKeyPressed(KeyboardKey.D))
+			{
+				Application.debug = !Application.debug;
 			}
 		}
 
@@ -465,10 +469,11 @@ public class Shell(TextRenderer render)
 		}
 		catch (Exception ex)
 		{
+			running = null;
 			update = true;
 			output = true;
 			Printf(ex.Message, 2);
-			running = null;
+			Prompt();
 		}
 
 		if (running == null && ((!update) || (!cantype)))

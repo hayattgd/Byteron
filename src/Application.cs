@@ -19,8 +19,9 @@ public static class Application
 
 	public static void Init()
 	{
-		Raylib.InitWindow((int)(display.width * 4.5f), (int)(display.height * 4.5f), name);
-		Raylib.SetWindowState(ConfigFlags.ResizableWindow | ConfigFlags.VSyncHint);
+		Raylib.InitWindow(display.width, display.height, name);
+		Raylib.SetWindowState(ConfigFlags.VSyncHint | ConfigFlags.FullscreenMode);
+		Raylib.DisableCursor();
 
 		display.Init();
 		shell.Run();

@@ -17,6 +17,9 @@ public class Display
 	public int height { get; private set; } = 144;
 
 	public int[][] pixel { get; private set; } = [];
+
+	public int pixelsize { get; private set; } = 0;
+
 	public Color[] palette = [
 		//GO-LINE PALETTE
 		//https://lospec.com/palette-list/go-line
@@ -142,9 +145,8 @@ public class Display
 
 	public void Draw()
 	{
-		int pixelsize = (int)MathF.Min(Raylib.GetRenderWidth() / width, Raylib.GetRenderHeight() / height);
-		if (pixelsize < 1) pixelsize = 1;
-
+		pixelsize = (int)MathF.Max(MathF.Min(Raylib.GetRenderWidth() / width, Raylib.GetRenderHeight() / height), 1);
+		
 		if (Application.debug)
 		{
 			TextRenderer textRenderer = new(this);
