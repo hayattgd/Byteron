@@ -61,9 +61,9 @@ public class Shell
 
 	public void Prompt()
 	{
-		Printf(">", fg);
+		Printf($"{currentpath} > ", fg);
 		y = text.Count - 1;
-		x = 1;
+		x = text[^1].text.Length;
 		cantype = true;
 		typed = "";
 	}
@@ -96,6 +96,7 @@ public class Shell
 					Printf("mkdir - Create new folder", fg);
 					Printf("ls - List files and folders existing", fg);
 					Printf("rm - Remove folder/file", fg);
+					Printf("pwd - Print current working directory", fg);
 					break;
 				}
 
@@ -215,9 +216,24 @@ public class Shell
 
 				case "cd":
 				{
-					if (Filesystem.ListFolders(currentpath).Contains(args[1]))
+					if (args[1] == ".") break;
+					if (args[1] == "..")
 					{
-						Path.Combine(currentpath, args[1]);
+						if (currentpath == "") break;
+						List<string> folderlist = currentpath.Split(Path.DirectorySeparatorChar).ToList();
+						folderlist.RemoveAt(folderlist.Count - 1);
+						string path = "";
+						foreach (string folder in folderlist)
+						{
+							if (path != "") path += Path.DirectorySeparatorChar;
+
+							path += folder;
+						}
+						currentpath = path;
+					}
+					else if (Filesystem.ListFolders(currentpath).Contains(args[1]))
+					{
+						currentpath = Path.Combine(currentpath, args[1]);
 					}
 					else
 					{
@@ -289,6 +305,12 @@ public class Shell
 						Printf($"File/Folder {args[1]} does not exist.", 2);
 					}
 
+					break;
+				}
+
+				case "pwd":
+				{
+					Printf(currentpath, fg);
 					break;
 				}
 

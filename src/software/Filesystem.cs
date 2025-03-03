@@ -19,6 +19,8 @@ public class Filesystem
 		string fullPath = ResolvePath(path);
 		string directory = Path.GetDirectoryName(fullPath) ?? RootPath;
 
+		if (File.Exists(fullPath)) return;
+		if (Directory.Exists(fullPath)) return;
 		if (!Directory.Exists(directory))
 			Directory.CreateDirectory(directory);
 		
