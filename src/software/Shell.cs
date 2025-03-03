@@ -3,14 +3,11 @@ using Raylib_cs;
 
 namespace Byteron.software;
 
-public class Shell
+public class Shell(TextRenderer render)
 {
-	public Shell(TextRenderer render)
-	{
-		this.render = render;
-	}
-
 	public bool cantype;
+	public bool output = true;
+	public bool update = true;
 	public int x;
 	public int y;
 	public string typed { get; private set; } = "";
@@ -20,12 +17,16 @@ public class Shell
 	string previousCommand = "";
 
 	int ticks = 0;
-	int bg = 8;
-	int fg = 12;
+	public int bg { get; private set; } = 8;
+	public int fg { get; private set; } = 12;
 
 	public List<Text> text = [];
 
-	public TextRenderer render;
+	public TextRenderer render = render;
+
+	public Script? running { get; private set; }
+
+	string prefix => $"{currentpath} > ";
 
 	public struct Text
 	{
@@ -40,11 +41,26 @@ public class Shell
 
 	public void Printf(string str, int c)
 	{
+		if (!output) return;
+		
 		text.Add(new(str, c));
 		if(text.Count > render.target.height / 6)
 		{
 			text.RemoveAt(0);
 		}
+	}
+
+	public void Printf(string[] str, int c)
+	{
+		foreach (var item in str)
+		{
+			Printf(item, c);
+		}
+	}
+
+	public void Printf(string str)
+	{
+		Printf(str, fg);
 	}
 
 	public void Run()
@@ -56,48 +72,61 @@ public class Shell
 	public void Init()
 	{
 		render.target.Clear(8);
-		Printf("Welcome to " + Application.name + "!", fg);
-		Printf("type help for list of commands.", fg);
+		output = true;
+		update = true;
+		Printf("Welcome to " + Application.name + "!");
+		Printf("type help for list of commands.");
 	}
 
 	public void Prompt()
 	{
-		Printf($"{currentpath} > ", fg);
+		Printf(prefix);
+		Type();
+	}
+
+	public void Type()
+	{
 		y = text.Count - 1;
 		x = text[^1].text.Length;
 		cantype = true;
 		typed = "";
 	}
 
-	public void RunCommand(string raw)
+	public void RunCommand(string raw) => RunCommand(raw, true);
+
+	public string[] RunCommand(string raw, bool fromterm)
 	{
 		string trim = raw.Trim();
-		previousCommand = trim;
+
+		if (fromterm) previousCommand = trim;
 
 		string[] args = trim.Split(' ');
 		string command = args[0];
 
-		if (command == "") return;
+		if (command == "") return [];
+
+		List<string> ret = [];
 
 		switch (command)
 		{
 			case "help":
 			{
-				Printf("help - Shows this text", fg);
-				Printf("exit - Shutdown Byteron", fg);
-				Printf("reset - Reset Byteron", fg);
-				Printf("dbg - Toggle debug info", fg);
-				Printf("run - Runs lua file", fg);
-				Printf("res - Change resolution", fg);
-				Printf("clear - Clear texts on console", fg);
-				Printf("echo - Prints text", fg);
-				Printf("color - Sets color of shell", fg);
-				Printf("cd - Changes current directory", fg);
-				Printf("touch - Create new file", fg);
-				Printf("mkdir - Create new folder", fg);
-				Printf("ls - List files and folders existing", fg);
-				Printf("rm - Remove folder/file", fg);
-				Printf("pwd - Print current working directory", fg);
+				ret.Add("help - Shows this text");
+				ret.Add("exit - Shutdown Byteron");
+				ret.Add("reset - Reset Byteron");
+				ret.Add("dbg - Toggle debug info");
+				ret.Add("run - Runs lua file");
+				ret.Add("res - Change resolution");
+				ret.Add("clear - Clear texts on console");
+				ret.Add("echo - Prints text");
+				ret.Add("color - Sets color of shell");
+				ret.Add("cd - Changes current directory");
+				ret.Add("touch - Create new file");
+				ret.Add("mkdir - Create new folder");
+				ret.Add("ls - List files and folders existing");
+				ret.Add("rm - Remove folder/file");
+				ret.Add("pwd - Print current working directory");
+				Printf(ret.ToArray(), fg);
 				break;
 			}
 
@@ -114,6 +143,9 @@ public class Shell
 				text.Clear();
 				Application.display = new();
 				Application.display.Init();
+				update = true;
+				cantype = true;
+				running = null;
 				render.target = Application.display;
 				Init();
 				break;
@@ -132,14 +164,43 @@ public class Shell
 					Printf("Usage: run [NAME]", 2);
 					break;
 				}
-				if (!Filesystem.FileExists(args[1])) 
+
+				string path = "";
+
+				if (!Filesystem.FileExists(args[1]))
 				{
-					Printf($"File {args[1]} doesn't exist.", 2);
-					break;
+					if (!Filesystem.FileExists(args[1] + ".lua"))
+					{
+						ret.Add($"File {args[1]} doesn't exist.");
+						Printf(ret[0], 2);
+						break;
+					}
+					else
+					{
+						path = args[1] + ".lua";
+					}
+				}
+				else
+				{
+					path = args[1];
 				}
 
-				Script script = new();
-				script.DoString(Filesystem.ReadFile(args[1]));
+				API api = new(this);
+				running = new();
+
+				api.RegisterAPIs(running);
+				cantype = false;
+
+				try
+				{
+					running.DoString(Filesystem.ReadFile(path));
+					CallScript("Init");
+				}
+				catch (Exception ex)
+				{
+					ret.Add(ex.Message);
+					Printf(ret[0], 2);
+				}
 				break;
 			}
 
@@ -149,7 +210,8 @@ public class Shell
 				{
 					Printf("Usage:res [width] [height]", 2);
 					Printf("Usage:res fit (scale) (-f)", 2);
-					Printf("Current:"+render.target.width+"x"+render.target.height, 2);
+					ret.Add("Current:"+render.target.width+"x"+render.target.height);
+					Printf(ret[0], 2);
 					Printf("Default:256x144", 2);
 					break;
 				}
@@ -201,7 +263,8 @@ public class Shell
 				{
 					str += args[i] + " ";
 				}
-				Printf(str, fg);
+				ret.Add(str);
+				Printf(ret.ToArray(), fg);
 				break;
 			}
 
@@ -289,7 +352,9 @@ public class Shell
 				string[] folders = Filesystem.ListFolders(currentpath);
 				string[] files = Filesystem.ListFiles(currentpath);
 
-				foreach (string stuff in folders.Concat(files))
+				var concat = folders.Concat(files);
+				ret = concat.ToList();
+				foreach (string stuff in concat)
 				{
 					if (folders.Contains(stuff))
 					{
@@ -341,7 +406,7 @@ public class Shell
 
 			case "pwd":
 			{
-				Printf(currentpath, fg);
+				Printf(currentpath);
 				break;
 			}
 
@@ -351,10 +416,68 @@ public class Shell
 				break;
 			}
 		}
+	
+		return ret.ToArray();
+	}
+
+	public void CallScript(string func)
+	{
+		if (running == null) return;
+
+		DynValue init = running.Globals.Get(func);
+		if (init.Type == DataType.Function)
+		{
+			running.Call(init);
+		}
+		else
+		{
+			Printf($"{func}() not found.", 2);
+		}
 	}
 
 	public void Update()
 	{
+		int charcode = Raylib.GetCharPressed();
+		if (Raylib.IsKeyDown(KeyboardKey.LeftControl))
+		{
+			if (Raylib.IsKeyPressed(KeyboardKey.C))
+			{
+				running = null;
+				update = true;
+				output = true;
+				Printf("^C");
+				Prompt();
+			}
+			if (Raylib.IsKeyPressed(KeyboardKey.R))
+			{
+				running = null;
+				update = true;
+				output = true;
+				Printf("^R");
+				RunCommand(previousCommand);
+				Prompt();
+			}
+		}
+
+		try
+		{
+			CallScript("Update");
+		}
+		catch (Exception ex)
+		{
+			update = true;
+			output = true;
+			Printf(ex.Message, 2);
+			running = null;
+		}
+
+		if (running == null && ((!update) || (!cantype)))
+		{
+			update = true;
+			Prompt();
+		}
+		if (!update) return;
+
 		ticks++;
 
 		Application.display.Clear(bg);
@@ -363,7 +486,6 @@ public class Shell
 			render.DrawText(0, i * 6, text[i].text, text[i].color);
 		}
 
-		int charcode = Raylib.GetCharPressed();
 		if (cantype)
 		{
 			if (charcode != 0)
@@ -381,8 +503,22 @@ public class Shell
 				text[y] = new(text[y].text + typed, text[y].color);
 				RunCommand(typed);
 				typed = "";
+				if (running != null) 
+				{
+					cantype = false;
+					return;
+				}
 				Prompt();
 			}
+			// someday i may do this cuz i dont use this
+			// else if(Raylib.IsKeyPressed(KeyboardKey.Left))
+			// {
+				
+			// }
+			// else if(Raylib.IsKeyPressed(KeyboardKey.Right))
+			// {
+				
+			// }
 			else if(Raylib.IsKeyPressed(KeyboardKey.Up))
 			{
 				typed = previousCommand;

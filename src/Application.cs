@@ -37,9 +37,9 @@ public static class Application
 	public static void Update()
 	{
 		Raylib.BeginDrawing();
-		Raylib.ClearBackground(display.average);
 
 		shell.Update();
+		Raylib.ClearBackground(display.average);
 		display.Draw();
 
 		Raylib.EndDrawing();
