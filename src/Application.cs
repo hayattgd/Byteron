@@ -19,7 +19,7 @@ public static class Application
 
 	public static void Init()
 	{
-		Raylib.InitWindow((int)(display.width * 3.5f), (int)(display.height * 3.5f), name);
+		Raylib.InitWindow((int)(display.width * 4.5f), (int)(display.height * 4.5f), name);
 		Raylib.SetWindowState(ConfigFlags.ResizableWindow | ConfigFlags.VSyncHint);
 
 		display.Init();
