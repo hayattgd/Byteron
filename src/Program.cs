@@ -9,13 +9,26 @@ public class Program
 		if (args.Contains("-debug")) Application.debug = true;
 
 		Application.Init();
+		Raylib.SetExitKey(KeyboardKey.Null);
 
-		while (!Raylib.WindowShouldClose())
+		return Init();
+	}
+
+	public static int Init()
+	{
+		Application.isRunning = true;
+		Application.reset = false;
+
+		while ((!Raylib.WindowShouldClose()) && Application.isRunning)
 		{
 			Application.Update();
 		}
 
 		Application.Unload();
+		if (Application.reset)
+		{
+			return Init();
+		}
 
 		return 0;
 	}

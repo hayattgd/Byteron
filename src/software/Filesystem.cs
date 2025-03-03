@@ -1,74 +1,98 @@
 namespace Byteron.software;
 
-public class Content
+public class Filesystem
 {
-	protected Content(string name)
-	{
-		Name = name;
-		parent = Application.rootfolder;
-	}
+	public static readonly string RootPath = Path.Combine(Application.AppPath, "root");
 
-	public string path
+	public static void Init()
 	{
-		get
+		if (!Directory.Exists(Application.AppPath))
 		{
-			string result = "/" + Name;
-			Folder current = GetParent();
-			while (current.parent != current)
-			{
-				result = "/" + current.Name + result;
-				current = current.parent;
-			}
-			
-			return result;
+			Directory.CreateDirectory(RootPath);
 		}
 	}
-	public string Name { get; protected set; } = "";
 
-	protected Folder parent;
+	public static string ResolvePath(string path) => Path.Combine(RootPath, path);
 
-	public virtual Folder GetParent() => parent;
-}
-
-public class Folder : Content
-{
-	internal Folder(string name, bool root) : base(name)
+	public static void CreateFolder(string path)
 	{
-		isRoot = root;
+		string fullPath = ResolvePath(path);
+		string directory = Path.GetDirectoryName(fullPath) ?? RootPath;
+
+		if (!Directory.Exists(directory))
+			Directory.CreateDirectory(directory);
+		
+		Directory.CreateDirectory(fullPath);
 	}
 
-	private bool isRoot = false;
-
-	private List<Folder> folders = new();
-	private List<File> files = new();
-
-	public override Folder GetParent()
+	public static string[] ListFiles(string path)
 	{
-		return isRoot ? this : parent;
+		string fullPath = ResolvePath(path);
+
+		string[] files = Directory.GetFiles(fullPath);
+		List<string> names = [];
+		foreach (var file in files)
+		{
+			names.Add(file.Split(Path.DirectorySeparatorChar)[^1]);
+		}
+
+		return names.ToArray();
 	}
 
-	public void CreateFile(string name, string content)
+	public static string[] ListFolders(string path)
 	{
-		files.Add(new File(name, content));
+		string fullPath = ResolvePath(path);
+
+		string[] folders = Directory.GetDirectories(fullPath);
+		List<string> names = [];
+		foreach (var folder in folders)
+		{
+			names.Add(folder.Split(Path.DirectorySeparatorChar)[^1]);
+		}
+
+		return names.ToArray();
 	}
 
-	public void DeleteFile(string name)
+	public static bool FolderExists(string path)
 	{
-		files.RemoveAll(x => x.Name == name);
+		string fullPath = ResolvePath(path);
+		return Directory.Exists(fullPath);
 	}
 
-	public string GetFile(string name)
+	public static void RemoveFolder(string path, bool recursive)
 	{
-		return files.First(x => x.Name == name).Content;
-	}
-}
+		string fullPath = ResolvePath(path);
 
-public class File : Content
-{
-	internal File(string name, string content) : base(name)
-	{
-		Content = content;
+		Directory.Delete(fullPath, recursive);
 	}
 
-	public string Content { get; private set; } = "";
+
+	public static void WriteFile(string path, string content)
+	{
+		string fullPath = ResolvePath(path);
+		string directory = Path.GetDirectoryName(fullPath) ?? RootPath;
+
+		if (!Directory.Exists(directory))
+			Directory.CreateDirectory(directory);
+
+		File.WriteAllText(fullPath, content);
+	}
+
+	public static string ReadFile(string path)
+	{
+		string fullPath = ResolvePath(path);
+		return (File.Exists(fullPath) ? File.ReadAllText(fullPath) : null) ?? "";
+	}
+
+	public static bool FileExists(string path)
+	{
+		string fullPath = ResolvePath(path);
+		return File.Exists(fullPath);
+	}
+
+	public static void RemoveFile(string path)
+	{
+		string fullPath = ResolvePath(path);
+		File.Delete(fullPath);
+	}
 }

@@ -13,8 +13,8 @@ public class Display
 	private int _fps;
 	public int fps { get => _fps; set { _fps = value; Raylib.SetTargetFPS(value); }}
 
-	public int width = 256;
-	public int height = 144;
+	public int width { get; private set; } = 256;
+	public int height { get; private set; } = 144;
 
 	public int[][] pixel { get; private set; } = [];
 	public Color[] palette = [
@@ -78,6 +78,20 @@ public class Display
 		}
 	}
 
+	public bool ChangeResolution(int w, int h)
+	{
+		int actualw = w;
+		int actualh = h;
+		if (w < 32) actualw = 32;
+		if (h < 18) actualh = 18;
+
+		width = actualw;
+		height = actualh;
+		Init();
+
+		return actualw == w && actualh == h;
+	}
+
 	public void Clear(int color)
 	{
 		for (int x = 0; x < width; x++)
@@ -118,6 +132,8 @@ public class Display
 
 	public bool CheckPixel(int x, int y)
 	{
+		if (x < 0) return false;
+		if (y < 0) return false;
 		if (x > width - 1) return false;
 		if (y > height - 1) return false;
 
@@ -127,16 +143,19 @@ public class Display
 	public void Draw()
 	{
 		int pixelsize = (int)MathF.Min(Raylib.GetRenderWidth() / width, Raylib.GetRenderHeight() / height);
+		if (pixelsize < 1) pixelsize = 1;
 
-		#if DEBUG
-		TextRenderer textRenderer = new(this);
-		textRenderer.DrawText(2, height - 6, "Scale:" + pixelsize, 10);
-		textRenderer.DrawText(2, height - 12, "FPS:" + Raylib.GetFPS() + "/" + fps, 5);
-		for (int i = 0; i < palette.Length; i++)
+		if (Application.debug)
 		{
-			SetPixel(0, height - i, i);
+			TextRenderer textRenderer = new(this);
+			textRenderer.DrawText(2, height - 6, "Res:" + width + "x" + height, 10);
+			textRenderer.DrawText(2, height - 12, "Scale:" + pixelsize, 10);
+			textRenderer.DrawText(2, height - 18, "FPS:" + Raylib.GetFPS() + "/" + fps, 5);
+			for (int i = 0; i < palette.Length; i++)
+			{
+				SetPixel(0, height - i, i);
+			}
 		}
-		#endif
 
 		for (int x = 0; x < width; x++)
 		{
