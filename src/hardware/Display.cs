@@ -11,14 +11,24 @@ public class Display
 	}
 
 	private int _fps;
-	public int fps { get => _fps; set { _fps = value; Raylib.SetTargetFPS(value); }}
+	public int fps {
+		get => _fps;
+		set
+		{
+			int limited = value;
+			if (limited < 7) { limited = 7; }
+
+			_fps = limited;
+			Raylib.SetTargetFPS(limited);
+		}
+	}
 
 	public int width { get; private set; } = 256;
 	public int height { get; private set; } = 144;
 
 	public int[][] pixel { get; private set; } = [];
 
-	public int pixelsize { get; private set; } = 0;
+	public int pixelsize { get; private set; } = 1;
 
 	public Color[] palette = [
 		//GO-LINE PALETTE
@@ -163,6 +173,7 @@ public class Display
 		{
 			for (int y = 0; y < height; y++)
 			{
+				// if (x % 2 == 0 && y % 2 == 0) continue;
 				int xpadding = Raylib.GetRenderWidth() - width * pixelsize;
 				int ypadding = Raylib.GetRenderHeight() - height * pixelsize;
 				Raylib.DrawRectangle(xpadding / 2 + x * pixelsize, ypadding / 2 + y * pixelsize, pixelsize, pixelsize, palette[pixel[x][y]]);

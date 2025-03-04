@@ -4,7 +4,7 @@ using Raylib_cs;
 
 namespace Byteron.software;
 
-public class API(Shell shell)
+public class API(Shell shell, Script lua)
 {
 	[Serializable]
 	public class LuaException : Exception
@@ -42,6 +42,20 @@ public class API(Shell shell)
 		shell.output = false;
 		shell.RunCommand(raw, false);
 		shell.output = true;
+	}
+
+	public void SetFPS(int? target)
+	{
+		if (target == null) throw new LuaException("render.setfps", MissingArgument);
+
+		if (target < 7)
+		{
+			display.fps = 7;
+		}
+		else
+		{
+			display.fps = (int)target;
+		}
 	}
 
 	public void Clear(int? c)
@@ -176,8 +190,15 @@ public class API(Shell shell)
 		render.DrawText((int)x, (int)y, text, col);
 	}
 
-	public void RegisterAPIs(Script lua)
+	public void Exit()
 	{
+		shell.processes.Remove(lua);
+	}
+
+	public void RegisterAPIs()
+	{
+		lua.Globals["Exit"] = (Action)Exit;
+
 		lua.Globals["Shell"] = new Table(lua);
 		((Table)lua.Globals["Shell"])["print"] = (Action<string?, int?>)Print;
 		((Table)lua.Globals["Shell"])["run"] = (Action<string?>)Run;
@@ -192,6 +213,10 @@ public class API(Shell shell)
 		((Table)lua.Globals["Input"])["mousebtn"] = (Func<int?, bool>)MouseDown;
 		((Table)lua.Globals["Input"])["mousedown"] = (Func<int?, bool>)MousePressed;
 		((Table)lua.Globals["Input"])["mouseup"] = (Func<int?, bool>)MouseReleased;
+		((Table)lua.Globals["Input"])["lockcursor"] = (Action)Raylib.DisableCursor;
+		((Table)lua.Globals["Input"])["unlockcursor"] = (Action)Raylib.EnableCursor;
+		((Table)lua.Globals["Input"])["hidecursor"] = (Action)Raylib.HideCursor;
+		((Table)lua.Globals["Input"])["showcursor"] = (Action)Raylib.ShowCursor;
 		((Table)lua.Globals["Input"])["xdelta"] = (Func<float>)GetMouseDeltaX;
 		((Table)lua.Globals["Input"])["ydelta"] = (Func<float>)GetMouseDeltaY;
 		
@@ -200,7 +225,7 @@ public class API(Shell shell)
 		((Table)((Table)lua.Globals["Input"])["mouse"])["Right"] = MouseButton.Right;
 		((Table)((Table)lua.Globals["Input"])["mouse"])["Middle"] = MouseButton.Middle;
 		((Table)((Table)lua.Globals["Input"])["mouse"])["Forward"] = MouseButton.Forward;
-		((Table)((Table)lua.Globals["Input"])["mouse"])["Bacl"] = MouseButton.Back;
+		((Table)((Table)lua.Globals["Input"])["mouse"])["Back"] = MouseButton.Back;
 
 		//Keycodes comes here
 		((Table)lua.Globals["Input"])["code"] = new Table(lua);
@@ -248,11 +273,13 @@ public class API(Shell shell)
 		((Table)((Table)lua.Globals["Input"])["code"])["Enter"] = KeyboardKey.Enter;
 		((Table)((Table)lua.Globals["Input"])["code"])["Shift"] = KeyboardKey.LeftShift;
 		((Table)((Table)lua.Globals["Input"])["code"])["Control"] = KeyboardKey.LeftControl;
+		((Table)((Table)lua.Globals["Input"])["code"])["Backspace"] = KeyboardKey.Backspace;
 
 		lua.Globals["Render"] = new Table(lua);
 		((Table)lua.Globals["Render"])["width"] = display.width;
 		((Table)lua.Globals["Render"])["height"] = display.height;
 		((Table)lua.Globals["Render"])["fps"] = display.fps;
+		((Table)lua.Globals["Render"])["setfps"] = (Action<int?>)SetFPS;
 		((Table)lua.Globals["Render"])["init"] = (Action)display.Init;
 		((Table)lua.Globals["Render"])["clear"] = (Action<int?>)Clear;
 		((Table)lua.Globals["Render"])["setpixel"] = (Action<int?, int?, int?>)SetPixel;

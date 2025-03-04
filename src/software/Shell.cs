@@ -24,7 +24,7 @@ public class Shell(TextRenderer render)
 
 	public TextRenderer render = render;
 
-	public Script? running { get; private set; }
+	public List<Script> processes { get; private set; } = new();
 
 	string prefix => $"{currentpath} > ";
 
@@ -116,7 +116,7 @@ public class Shell(TextRenderer render)
 				ret.Add("reset - Reset Byteron");
 				ret.Add("dbg - Toggle debug info");
 				ret.Add("run - Runs lua file");
-				ret.Add("res - Change resolution");
+				ret.Add("disp - Change Framerate or resolution.");
 				ret.Add("clear - Clear texts on console");
 				ret.Add("echo - Prints text");
 				ret.Add("color - Sets color of shell");
@@ -145,7 +145,7 @@ public class Shell(TextRenderer render)
 				Application.display.Init();
 				update = true;
 				cantype = true;
-				running = null;
+				processes.Clear();
 				render.target = Application.display;
 				Init();
 				break;
@@ -185,37 +185,50 @@ public class Shell(TextRenderer render)
 					path = args[1];
 				}
 
-				API api = new(this);
-				running = new();
+				Script running = new();
+				API api = new(this, running);
 
-				api.RegisterAPIs(running);
+				api.RegisterAPIs();
 				cantype = false;
+
+				processes.Add(running);
 
 				try
 				{
 					running.DoString(Filesystem.ReadFile(path));
-					CallScript("Init");
+					CallScript(running, "Init");
 				}
-				catch (Exception ex)
+				catch (Exception)
 				{
-					ret.Add(ex.Message);
-					Printf(ret[0], 2);
+					
 				}
 				break;
 			}
 
-			case "res":
+			case "disp":
 			{
 				if (args.Length < 2 || (args[1] != "fit" && args.Length != 3))
 				{
-					Printf("Usage:res [width] [height]", 2);
-					Printf("Usage:res fit (scale) (-f)", 2);
+					Printf("Usage:disp [width] [height]", 2);
+					Printf("Usage:disp fit (scale) (-f)", 2);
+					Printf("Usage:disp fps [value]", 2);
 					ret.Add("Current:"+render.target.width+"x"+render.target.height);
 					Printf(ret[0], 2);
 					Printf("Default:256x144", 2);
 					break;
 				}
-				if (args[1] == "fit")
+				if (args[1] == "fps" && args.Length == 3)
+				{
+					if (int.TryParse(args[2], out int target))
+					{
+						render.target.fps = target;
+					}
+					else
+					{
+						Printf("Usage:disp fps [value]");
+					}
+				}
+				else if (args[1] == "fit")
 				{
 					int scale = 1;
 					if (args.Length > 2) scale = int.Parse(args[2]);
@@ -420,29 +433,89 @@ public class Shell(TextRenderer render)
 		return ret.ToArray();
 	}
 
-	public void CallScript(string func)
+	public bool CallScript(Script running, string func, bool output = true)
 	{
-		if (running == null) return;
+		if (running == null) return false;
 
-		DynValue init = running.Globals.Get(func);
-		if (init.Type == DataType.Function)
+		DynValue f = running.Globals.Get(func);
+		if (f.Type == DataType.Function)
 		{
-			running.Call(init);
+			try
+			{
+				running.Call(f);
+			}
+			catch (Exception ex)
+			{
+				if (ex.GetType() == typeof(ScriptRuntimeException))
+				{
+					if (update)
+					{
+						Prompt();
+					}
+				}
+				throw;
+			}
+
+			return true;
 		}
 		else
 		{
-			Printf($"{func}() not found.", 2);
+			if (output) Printf($"{func}() not found.", 2);
+
+			return false;
 		}
 	}
 
 	public void Update()
 	{
 		int charcode = Raylib.GetCharPressed();
+
+		if (Raylib.IsKeyDown(KeyboardKey.LeftControl) && Raylib.IsKeyDown(KeyboardKey.LeftShift) && Raylib.IsKeyDown(KeyboardKey.LeftAlt) && Raylib.IsKeyDown(KeyboardKey.Backspace))
+		{
+			processes.Clear();
+			render.target.fps = 60;
+		}
+		else
+		{
+			List<Script> scriptToRemove = [];
+			for (int i = 0; i < processes.Count; i++)
+			{
+				Script process = processes[i];
+				try
+				{
+					CallScript(process, "Update");
+				}
+				catch (Exception ex)
+				{
+					if (ex.GetType() == typeof(ScriptRuntimeException))
+					{
+						scriptToRemove.Add(process);
+					}
+					throw;
+				}
+			}
+
+			foreach (Script target in scriptToRemove)
+			{
+				processes.Remove(target);
+			}
+			scriptToRemove.Clear();
+		}
+
+		if (processes.Count == 0 && ((!update) || (!cantype)))
+		{
+			update = true;
+			render.target.fps = 60;
+			Raylib.ShowCursor();
+			Raylib.EnableCursor();
+			Prompt();
+		}
+		if (!update) return;
 		if (Raylib.IsKeyDown(KeyboardKey.LeftControl))
 		{
 			if (Raylib.IsKeyPressed(KeyboardKey.C))
 			{
-				running = null;
+				processes.Clear();
 				update = true;
 				output = true;
 				Printf("^C");
@@ -450,7 +523,7 @@ public class Shell(TextRenderer render)
 			}
 			else if (Raylib.IsKeyPressed(KeyboardKey.R))
 			{
-				running = null;
+				processes.Clear();
 				update = true;
 				output = true;
 				Printf("^R");
@@ -462,26 +535,6 @@ public class Shell(TextRenderer render)
 				Application.debug = !Application.debug;
 			}
 		}
-
-		try
-		{
-			CallScript("Update");
-		}
-		catch (Exception ex)
-		{
-			running = null;
-			update = true;
-			output = true;
-			Printf(ex.Message, 2);
-			Prompt();
-		}
-
-		if (running == null && ((!update) || (!cantype)))
-		{
-			update = true;
-			Prompt();
-		}
-		if (!update) return;
 
 		ticks++;
 
@@ -508,7 +561,7 @@ public class Shell(TextRenderer render)
 				text[y] = new(text[y].text + typed, text[y].color);
 				RunCommand(typed);
 				typed = "";
-				if (running != null) 
+				if (processes.Count == 0)
 				{
 					cantype = false;
 					return;

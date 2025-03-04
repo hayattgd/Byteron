@@ -1,3 +1,6 @@
+---Close process
+Exit = function () end
+
 Shell = {
 	---Prints out text to shell console
 	---@param text string
@@ -50,6 +53,22 @@ Input = {
 	---@param button mouse
 	---@return boolean
 	mouseup = function (button) return false end,
+
+	---Lock and hide cursor.
+	---Usually, you should hide WM cursor instead of host.
+	lockcursor = function () end,
+
+	---Unlock and show cursor.
+	---Usually, you should hide WM cursor instead of host.
+	unlockcursor = function () end,
+
+	---Hide cursor.
+	---Usually, you should hide WM cursor instead of host.
+	hidecursor = function () end,
+
+	---Show cursor.
+	---Usually, you should hide WM cursor instead of host.
+	showcursor = function () end,
 
 	---Represents x axis of mouse delta.
 	---@return integer
@@ -114,6 +133,7 @@ Input = {
 		Enter = 0,
 		Shift = 0,
 		Control = 0,
+		Backspace = 0
 	}
 }
 
@@ -126,6 +146,10 @@ Render = {
 
 	---Represents current fps.
 	fps = 60,
+
+	---Set desired fps
+	---@param target integer
+	setfps = function(target) end,
 
 	---Initalize renderer.
 	init = function () end,
