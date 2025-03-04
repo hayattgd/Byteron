@@ -6,6 +6,9 @@ namespace Byteron.software;
 
 public class API(Shell shell, Script lua)
 {
+	// Used to communicate between processes
+	public static Dictionary<string, List<DynValue>> pipecallbacks = [];
+
 	[Serializable]
 	public class LuaException : Exception
 	{
@@ -195,9 +198,46 @@ public class API(Shell shell, Script lua)
 		shell.processes.Remove(lua);
 	}
 
+	public void AddPipeCallback(string? name, DynValue callback)
+	{
+		if (name == null) throw new LuaException("pipe.addcallback", MissingArgument);
+		if (callback == null) throw new LuaException("pipe.addcallback", MissingArgument);
+
+		if (callback.Type != DataType.Function) return;
+		if (!pipecallbacks.ContainsKey(name)) pipecallbacks.Add(name, []);
+		pipecallbacks[name].Add(callback);
+	}
+
+	public void RemovePipeCallback(string? name, DynValue callback)
+	{
+		if (name == null) throw new LuaException("pipe.removecallback", MissingArgument);
+		if (callback == null) throw new LuaException("pipe.removecallback", MissingArgument);
+
+		if (callback.Type != DataType.Function) return;
+		if (!pipecallbacks.ContainsKey(name)) return;
+		pipecallbacks[name].Remove(callback);
+	}
+
+	public void WritePipe(string? name, DynValue? content)
+	{
+		if (name == null) throw new LuaException("pipe.write", MissingArgument);
+		if (content == null) throw new LuaException("pipe.write", MissingArgument);
+
+		if (!pipecallbacks.ContainsKey(name)) return;
+		foreach (var callback in pipecallbacks[name])
+		{
+			callback.Function.Call(content);
+		}
+	}
+
 	public void RegisterAPIs()
 	{
 		lua.Globals["Exit"] = (Action)Exit;
+
+		lua.Globals["Pipe"] = new Table(lua);
+		((Table)lua.Globals["Pipe"])["addcallback"] = (Action<string?, DynValue>)AddPipeCallback;
+		((Table)lua.Globals["Pipe"])["removecallback"] = (Action<string?, DynValue>)RemovePipeCallback;
+		((Table)lua.Globals["Pipe"])["write"] = (Action<string?, DynValue?>)WritePipe;
 
 		lua.Globals["Shell"] = new Table(lua);
 		((Table)lua.Globals["Shell"])["print"] = (Action<string?, int?>)Print;

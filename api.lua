@@ -1,6 +1,24 @@
 ---Close process
 Exit = function () end
 
+Pipe = {
+
+	---Adds callback to pipe.
+	---@param name string
+	---@param func function
+	addcallback = function (name, func) end,
+
+	---Removes callback from pipe.
+	---@param name string
+	---@param func function
+	removecallback = function (name, func) end,
+
+	---Sends message to pipe and call callbacks.
+	---@param name string
+	---@param content any
+	write = function (name, content) end
+}
+
 Shell = {
 	---Prints out text to shell console
 	---@param text string

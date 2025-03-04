@@ -448,6 +448,16 @@ public class Shell(TextRenderer render)
 			{
 				if (ex.GetType() == typeof(ScriptRuntimeException))
 				{
+					if (output)
+					{
+						Printf(ex.Message, 2);
+						Printf("Callstack:", 2);
+						foreach (var call in ((ScriptRuntimeException)ex).CallStack)
+						{
+							Printf($"{call.Location.FromLine}:{call.Location.FromChar} {call.Name}()", 2);
+						}
+					}
+
 					if (update)
 					{
 						Prompt();
