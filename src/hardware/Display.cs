@@ -169,14 +169,18 @@ public class Display
 			}
 		}
 
+		int xpadding = Raylib.GetRenderWidth() - width * pixelsize;
+		int ypadding = Raylib.GetRenderHeight() - height * pixelsize;
+
+		int xoffset = xpadding / 2;
+		int yoffset = ypadding / 2;
+
 		for (int x = 0; x < width; x++)
 		{
 			for (int y = 0; y < height; y++)
 			{
 				// if (x % 2 == 0 && y % 2 == 0) continue;
-				int xpadding = Raylib.GetRenderWidth() - width * pixelsize;
-				int ypadding = Raylib.GetRenderHeight() - height * pixelsize;
-				Raylib.DrawRectangle(xpadding / 2 + x * pixelsize, ypadding / 2 + y * pixelsize, pixelsize, pixelsize, palette[pixel[x][y]]);
+				Raylib.DrawRectangle(x * pixelsize + xoffset, y * pixelsize + yoffset, pixelsize, pixelsize, palette[pixel[x][y]]);
 			}
 		}
 	}
